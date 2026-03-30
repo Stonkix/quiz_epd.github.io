@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Квиз: Подбор сценария ЭПД</title>
+    <title>Квиз: Подбор сценария ЭТРН</title>
     <style>
         * {
             margin: 0;
@@ -76,14 +76,8 @@
         }
         
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .card-title {
@@ -96,13 +90,15 @@
             font-weight: 600;
         }
         
+        /* ВСЕГДА в одну линию (даже при 4 карточках) */
         .options-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); /* 4 карточки теперь в ряд */
             gap: 20px;
             margin-bottom: 40px;
         }
         
+        /* Все карточки одинакового размера */
         .option-card {
             background: #fafbfc;
             border: 2px solid #e2e8f0;
@@ -112,7 +108,7 @@
             transition: all 0.2s ease;
             text-align: center;
             position: relative;
-            min-height: 200px;
+            min-height: 220px;           /* фиксированная высота */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -140,7 +136,6 @@
         .option-icon {
             font-size: 48px;
             margin-bottom: 16px;
-            pointer-events: none;
         }
         
         .option-title {
@@ -148,7 +143,6 @@
             font-weight: 600;
             color: #1e293b;
             margin-bottom: 12px;
-            pointer-events: none;
         }
         
         .option-description {
@@ -157,7 +151,6 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
-            pointer-events: none;
         }
         
         .option-description span {
@@ -226,34 +219,39 @@
             font-weight: 700;
         }
         
+        .result-subtitle {
+            font-size: 20px;
+            color: #8b5cf6;
+            margin-bottom: 24px;
+        }
+        
         .result-description {
             font-size: 16px;
             color: #64748b;
             line-height: 1.6;
             margin-bottom: 30px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
-        .result-client {
-            background: #f0fdf4;
-            border: 2px solid #86efac;
+        .result-link {
+            display: inline-block;
+            background: #f0f4ff;
+            color: #3b82f6;
+            padding: 12px 24px;
             border-radius: 12px;
-            padding: 20px;
-            margin: 20px 0;
-            text-align: left;
-        }
-
-        .result-client h4 {
-            color: #166534;
-            margin-bottom: 12px;
-            font-size: 18px;
-        }
-
-        .result-client p {
-            color: #166534;
-            line-height: 1.6;
-            margin-bottom: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 30px;
+            transition: all 0.2s;
         }
         
+        .result-link:hover {
+            background: #dbeafe;
+            transform: translateY(-2px);
+        }
+
         .btn-restart {
             background: #8b5cf6;
             color: white;
@@ -280,163 +278,83 @@
     </div>
 
     <script>
-        const scenarioLogic = {
-            1: { 
-                customer: 'sender', 
-                carriers: 'one', 
-                special: 'no',
-                title: 'Заказчик — грузоотправитель',
-                description: 'Вы отправляете свой груз, один перевозчик, стандартные условия.'
-            },
-            2: { 
-                customer: 'sender', 
-                carriers: 'multiple', 
-                special: 'no',
-                title: 'Перевозка с переменой транспорта',
-                description: 'Вы отправляете груз, участвует несколько перевозчиков.'
-            },
-            3: { 
-                customer: 'receiver', 
-                carriers: 'one', 
-                special: 'no',
-                title: 'Заказчик — грузополучатель',
-                description: 'Вам доставляют груз, вы являетесь получателем и заказчиком.'
-            },
-            4: { 
-                customer: 'third_party', 
-                carriers: 'one', 
-                special: 'no',
-                title: 'Заказчик — третье лицо (экспедитор)',
-                description: 'Вы посредник/экспедитор, организующий перевозку.'
-            },
-            5: { 
-                customer: 'sender', 
-                carriers: 'one', 
-                special: 'temp',
-                title: 'Перевозка с температурным режимом',
-                description: 'Вы отправитель, груз требует контроля температуры.'
-            },
-            6: { 
-                customer: 'sender', 
-                carriers: 'one', 
-                special: 'dangerous',
-                title: 'Перевозка опасного груза',
-                description: 'Вы отправитель, груз относится к опасным (ДОПОГ).'
-            },
-            7: { 
-                customer: 'receiver', 
-                carriers: 'multiple', 
-                special: 'no',
-                title: 'Получатель + несколько перевозчиков',
-                description: 'Вы получатель, груз доставят со сменой транспорта.'
-            },
-            8: { 
-                customer: 'third_party', 
-                carriers: 'multiple', 
-                special: 'no',
-                title: 'Экспедитор + несколько перевозчиков',
-                description: 'Вы экспедитор, организуете перевозку с несколькими перевозчиками.'
-            },
-            9: { 
-                customer: 'sender', 
-                carriers: 'multiple', 
-                special: 'temp',
-                title: 'Температурный режим + несколько перевозчиков',
-                description: 'Вы отправитель, груз с температурным контролем и сменой транспорта.'
-            },
-            10: { 
-                customer: 'sender', 
-                carriers: 'multiple', 
-                special: 'dangerous',
-                title: 'Опасный груз + несколько перевозчиков',
-                description: 'Вы отправитель, опасный груз со сменой транспорта.'
-            },
-            11: { 
-                customer: 'receiver', 
-                carriers: 'one', 
-                special: 'temp',
-                title: 'Получатель + температурный режим',
-                description: 'Вы получатель груза с контролем температуры.'
-            }
-        };
-
-        const customerLabels = {
-            sender: 'Грузоотправитель',
-            receiver: 'Грузополучатель',
-            third_party: 'Третье лицо (экспедитор)'
-        };
-
+        // ==================== ВОПРОСЫ ====================
         const questions = [
             {
                 id: 1,
-                title: "Кто является заказчиком перевозки?",
+                title: "Кто инициирует и оформляет перевозку?",
                 icon: "👤",
                 options: [
-                    { 
-                        value: "sender", 
-                        icon: "📤",
-                        label: "Грузоотправитель",
-                        details: ["Я отправляю свой груз"]
-                    },
-                    { 
-                        value: "receiver", 
-                        icon: "📥",
-                        label: "Грузополучатель",
-                        details: ["Мне привезут груз"]
-                    },
-                    { 
-                        value: "third_party", 
-                        icon: "🤝",
-                        label: "Третье лицо",
-                        details: ["Посредник/экспедитор"]
-                    }
+                    { value: "sender", icon: "📤", label: "Владелец груза / продавец", details: ["Грузоотправитель сам"] },
+                    { value: "expeditor", icon: "🤝", label: "Экспедитор (посредник)", details: ["Организует перевозку"] },
+                    { value: "receiver", icon: "📥", label: "Покупатель / грузополучатель", details: ["Самовывоз"] },
+                    { value: "third", icon: "🏪", label: "Склад или третья сторона", details: ["Ответственное хранение"] }
                 ]
             },
             {
                 id: 2,
-                title: "Сколько перевозчиков участвует?",
+                title: "Участвует ли экспедитор и принимает ли груз во владение?",
                 icon: "🚚",
                 options: [
-                    { 
-                        value: "one", 
-                        icon: "1️⃣",
-                        label: "Один перевозчик",
-                        details: ["Прямая доставка"]
-                    },
-                    { 
-                        value: "multiple", 
-                        icon: "🔄",
-                        label: "Несколько перевозчиков",
-                        details: ["Смена транспорта"]
-                    }
+                    { value: "no", icon: "❌", label: "Нет экспедитора", details: ["Перевозка без посредника"] },
+                    { value: "organize", icon: "📋", label: "Только организует", details: ["Не принимает груз"] },
+                    { value: "possess", icon: "🔑", label: "Принимает во владение", details: ["Становится временным владельцем"] }
                 ]
             },
             {
                 id: 3,
-                title: "Особые условия перевозки",
-                icon: "⚙️",
+                title: "Какой у вас груз?",
+                icon: "📦",
                 options: [
-                    { 
-                        value: "no", 
-                        icon: "📦",
-                        label: "Обычный груз",
-                        details: ["Стандартные условия"]
-                    },
-                    { 
-                        value: "temp", 
-                        icon: "🌡️",
-                        label: "Температурный режим",
-                        details: ["Требуется контроль температуры"]
-                    },
-                    { 
-                        value: "dangerous", 
-                        icon: "⚠️",
-                        label: "Опасный груз",
-                        details: ["ДОПОГ"]
-                    }
+                    { value: "ordinary", icon: "📦", label: "Обычный груз", details: ["Без особых условий"] },
+                    { value: "sbor", icon: "🔀", label: "Сборный груз", details: ["Несколько отправителей/получателей"] },
+                    { value: "temp", icon: "🌡️", label: "Скоропортящийся груз", details: ["Температура, санконтроль"] },
+                    { value: "gis", icon: "🔍", label: "Груз с госучётом", details: ["Честный ЗНАК, Меркурий и др."] }
+                ]
+            },
+            {
+                id: 4,
+                title: "Будет ли перегрузка груза?",
+                icon: "🔄",
+                options: [
+                    { value: "no", icon: "➡️", label: "Нет, прямой путь", details: ["Без перевалки"] },
+                    { value: "yes", icon: "🔁", label: "Да (кросс-докинг)", details: ["Перегрузка без хранения"] }
+                ]
+            },
+            {
+                id: 5,
+                title: "Какой тип перевозки по сути?",
+                icon: "🔗",
+                options: [
+                    { value: "sale", icon: "🛒", label: "Между разными компаниями", details: ["Продажа / поставка"] },
+                    { value: "internal", icon: "🏬", label: "Внутренняя перевозка", details: ["Между своими складами"] },
+                    { value: "self", icon: "🚗", label: "Самовывоз покупателем", details: ["Со склада продавца"] }
+                ]
+            },
+            {
+                id: 6,
+                title: "Возможны ли изменения в процессе доставки?",
+                icon: "⚠️",
+                options: [
+                    { value: "no", icon: "✅", label: "Нет, всё по плану", details: ["Без изменений"] },
+                    { value: "replace", icon: "🚛", label: "Замена водителя / ТС", details: ["В процессе"] },
+                    { value: "redirect", icon: "📍", label: "Переадресовка или отказ", details: ["Изменение получателя"] }
                 ]
             }
         ];
+
+        // ==================== ЛОГИКА СЦЕНАРИЕВ ====================
+        const scenarioLogic = {
+            1: { title: "Простая перевозка груза", description: "Грузоотправитель → Перевозчик → Грузополучатель. Последовательная подпись всех титулов (1-2-3-4).", num: 1 },
+            2: { title: "Перевозка с участием одного экспедитора", description: "Экспедитор подписывает Титул 1 как отправитель (или с принятием груза во владение).", num: 2 },
+            3: { title: "Перевозка сборного груза", description: "Экспедитор формирует сборный груз на складе. Возможны две ЭТРН или специальные отметки.", num: 3 },
+            4: { title: "Перевозка с перегрузкой (кросс-докинг)", description: "Две ЭТРН: первая — до перегрузки, вторая — после.", num: 4 },
+            5: { title: "Перевозка с заменой водителя или ТС", description: "После Титула 2 оформляется Титул 8 (замена водителя/транспортного средства).", num: 5 },
+            6: { title: "Перевозка скоропортящегося груза", description: "В Титуле 1 указываются температурный режим и специальные условия.", num: 6 },
+            7: { title: "Частичная приёмка и переадресация", description: "Титул 3 (частичная приёмка) + Титул 7 (переадресация новому получателю).", num: 7 },
+            8: { title: "Отказ грузополучателя и переадресация", description: "Отказ в Титуле 3 + Титул 7 + возврат груза экспедитору.", num: 8 },
+            9: { title: "Самовывоз покупателем", description: "Покупатель одновременно выступает и отправителем, и получателем.", num: 9 }
+        };
 
         let currentQuestion = 0;
         let answers = {};
@@ -444,6 +362,7 @@
         function renderQuestion() {
             const question = questions[currentQuestion];
             const progress = ((currentQuestion + 1) / questions.length) * 100;
+            
             document.getElementById('progressBar').style.width = progress + '%';
             document.getElementById('stepIndicator').textContent = `Шаг ${currentQuestion + 1} из ${questions.length}`;
 
@@ -460,10 +379,7 @@
                             <div class="option-card ${selectedValue === opt.value ? 'selected' : ''}" 
                                  data-value="${opt.value}" 
                                  data-question="${question.id}">
-                                <input type="radio" 
-                                       name="q${question.id}" 
-                                       value="${opt.value}"
-                                       ${selectedValue === opt.value ? 'checked' : ''}>
+                                <input type="radio" name="q${question.id}" value="${opt.value}" ${selectedValue === opt.value ? 'checked' : ''}>
                                 <div class="option-icon">${opt.icon}</div>
                                 <div class="option-title">${opt.label}</div>
                                 <div class="option-description">
@@ -473,7 +389,7 @@
                         `).join('')}
                     </div>
                     <div class="buttons">
-                        ${currentQuestion > 0 ? '<button class="btn-back" id="btnBack">Назад</button>' : ''}
+                        ${currentQuestion > 0 ? '<button class="btn-back" id="btnBack">← Назад</button>' : ''}
                         <button class="btn-next" id="btnNext" ${!selectedValue ? 'disabled' : ''}>
                             ${currentQuestion < questions.length - 1 ? 'Продолжить →' : 'Показать результат'}
                         </button>
@@ -481,31 +397,25 @@
                 </div>
             `;
 
-            // Добавляем обработчики событий
             const optionCards = contentDiv.querySelectorAll('.option-card');
             optionCards.forEach(card => {
-                card.addEventListener('click', function() {
-                    const questionId = parseInt(this.dataset.question);
-                    const value = this.dataset.value;
-                    selectOption(questionId, value);
+                card.addEventListener('click', function () {
+                    const qId = parseInt(this.dataset.question);
+                    const val = this.dataset.value;
+                    selectOption(qId, val);
                 });
             });
 
             const btnNext = contentDiv.querySelector('#btnNext');
-            if (btnNext) {
-                btnNext.addEventListener('click', nextQuestion);
-            }
+            if (btnNext) btnNext.addEventListener('click', nextQuestion);
 
             const btnBack = contentDiv.querySelector('#btnBack');
-            if (btnBack) {
-                btnBack.addEventListener('click', prevQuestion);
-            }
+            if (btnBack) btnBack.addEventListener('click', prevQuestion);
         }
 
         function selectOption(questionId, value) {
             answers[questionId] = value;
-            
-            // Обновляем только состояние кнопки и выбранные карточки
+
             const selectedCards = document.querySelectorAll('.option-card');
             selectedCards.forEach(card => {
                 if (parseInt(card.dataset.question) === questionId) {
@@ -520,9 +430,7 @@
             });
 
             const btnNext = document.getElementById('btnNext');
-            if (btnNext) {
-                btnNext.disabled = false;
-            }
+            if (btnNext) btnNext.disabled = false;
         }
 
         function nextQuestion() {
@@ -542,61 +450,63 @@
         }
 
         function determineScenario() {
-            const userAnswers = {
-                customer: answers[1],
-                carriers: answers[2],
-                special: answers[3]
-            };
+            const a1 = answers[1];
+            const a2 = answers[2];
+            const a3 = answers[3];
+            const a4 = answers[4];
+            const a5 = answers[5];
+            const a6 = answers[6];
 
-            for (let scenarioNum in scenarioLogic) {
-                const scenario = scenarioLogic[scenarioNum];
-                if (
-                    scenario.customer === userAnswers.customer &&
-                    scenario.carriers === userAnswers.carriers &&
-                    scenario.special === userAnswers.special
-                ) {
-                    return parseInt(scenarioNum);
-                }
-            }
+            if (a3 === "temp") return scenarioLogic[6];
+            if (a6 === "replace") return scenarioLogic[5];
+            if (a4 === "yes") return scenarioLogic[4];
+            if (a3 === "sbor") return scenarioLogic[3];
+            if (a5 === "self") return scenarioLogic[9];
+            if (a6 === "redirect") return (a2 === "possess" || a1 === "expeditor") ? scenarioLogic[8] : scenarioLogic[7];
+            if (a1 === "expeditor" || a2 === "possess" || a2 === "organize") return scenarioLogic[2];
+            if (a1 === "receiver" || a5 === "self") return scenarioLogic[9];
+            if (a1 === "sender" && a2 === "no" && a4 === "no" && a5 === "sale") return scenarioLogic[1];
+            if (a5 === "internal") return scenarioLogic[1];
 
-            return 1;
+            return scenarioLogic[1];
         }
 
         function showResult() {
             document.getElementById('progressBar').style.width = '100%';
             document.getElementById('stepIndicator').textContent = 'Готово!';
-            
-            const scenarioNum = determineScenario();
-            const scenario = scenarioLogic[scenarioNum];
-            const clientRole = customerLabels[scenario.customer];
+
+            const scenario = determineScenario();
             
             const contentDiv = document.getElementById('quizContent');
             contentDiv.innerHTML = `
                 <div class="card active">
                     <div class="result">
-                        <div class="result-title">Сценарий №${scenarioNum}</div>
-                        <div class="result-description">${scenario.title}</div>
+                        <div class="result-title">Ваш сценарий</div>
+                        <div class="result-subtitle">№${scenario.num} — ${scenario.title}</div>
                         
-                        <div class="result-client">
-                            <h4>👤 Ваша роль в сценарии:</h4>
-                            <p><strong>${clientRole}</strong></p>
-                            <p>${scenario.description}</p>
+                        <div class="result-description">
+                            ${scenario.description}
+                            <br><br>
+                            Подробная инструкция по заполнению титулов ЭТРН именно для вашего случая — в статье Astral.ru.
                         </div>
 
-                        <img src="Stsenariy_${scenarioNum}.webp" 
-                             alt="Сценарий ${scenarioNum}" 
-                             class="result-image" 
-                             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 800 600%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22800%22 height=%22600%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-size=%2224%22 text-anchor=%22middle%22 fill=%22%23999%22%3EСценарий ${scenarioNum}%3C/text%3E%3C/svg%3E'">
-                        
-                        <button class="btn-restart" id="btnRestart">Пройти заново</button>
+                        <a href="https://astral.ru/aj/elem/kak-oformit-etrn-pri-raznykh-stsenariyakh-gruzoperevozki/" 
+                           target="_blank" 
+                           class="result-link">
+                            📖 Открыть полную статью с примерами
+                        </a>
+
+                        <img src="Stsenariy_${scenario.num}.webp" 
+                             alt="Сценарий ${scenario.num}" 
+                             class="result-image"
+                             onerror="this.src='https://placehold.co/800x400/8b5cf6/ffffff?text=Сценарий+№${scenario.num}'">
+
+                        <button class="btn-restart" id="btnRestart">Пройти квиз заново</button>
                     </div>
                 </div>
             `;
 
-            const btnRestart = contentDiv.querySelector('#btnRestart');
-            if (btnRestart) {
-                btnRestart.addEventListener('click', restart);
-            }
+            document.getElementById('btnRestart').addEventListener('click', restart);
         }
 
         function restart() {
