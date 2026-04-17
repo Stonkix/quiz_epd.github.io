@@ -1,0 +1,280 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.overlay{min-height:600px;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:16px;border-radius:var(--border-radius-lg)}
+.popup{background:var(--color-background-primary);border-radius:var(--border-radius-xl,20px);border:0.5px solid var(--color-border-tertiary);width:100%;max-width:680px;overflow:hidden;display:flex;flex-direction:column;max-height:90vh}
+.popup-header{padding:20px 24px 0;flex-shrink:0}
+.alert-bar{background:#FFF8E6;border:0.5px solid #EF9F27;border-radius:var(--border-radius-md);padding:10px 14px;display:flex;gap:10px;align-items:flex-start;margin-bottom:16px}
+.alert-bar .icon{font-size:14px;margin-top:1px;flex-shrink:0}
+.alert-bar p{font-size:12px;color:#633806;line-height:1.5}
+.progress-wrap{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.progress-track{flex:1;height:4px;background:var(--color-background-secondary);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:#7F77DD;border-radius:2px;transition:width .3s ease}
+.step-label{font-size:12px;color:var(--color-text-secondary);white-space:nowrap;min-width:60px;text-align:right}
+.popup-body{padding:16px 24px 20px;overflow-y:auto;flex:1}
+.q-title{font-size:16px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px}
+.q-hint{font-size:12px;color:var(--color-text-secondary);margin-bottom:14px}
+.opts{display:grid;gap:8px}
+.opts.cols-2{grid-template-columns:1fr 1fr}
+.opts.cols-3{grid-template-columns:1fr 1fr 1fr}
+.opt{border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:12px 14px;cursor:pointer;transition:all .15s;display:flex;align-items:flex-start;gap:10px;background:var(--color-background-primary)}
+.opt:hover{border-color:#7F77DD;background:#EEEDFE}
+.opt.sel{border-color:#7F77DD;background:#EEEDFE;border-width:1.5px}
+.opt-ico{font-size:20px;flex-shrink:0;line-height:1}
+.opt-body{}
+.opt-name{font-size:13px;font-weight:500;color:var(--color-text-primary);line-height:1.3}
+.opt-desc{font-size:11px;color:var(--color-text-secondary);margin-top:2px;line-height:1.4}
+.popup-footer{padding:12px 24px 16px;border-top:0.5px solid var(--color-border-tertiary);display:flex;gap:8px;flex-shrink:0}
+button{border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);border-radius:var(--border-radius-md);padding:9px 20px;font-size:13px;cursor:pointer;transition:all .15s}
+button:hover{background:var(--color-background-secondary)}
+.btn-pri{background:#7F77DD;border-color:#7F77DD;color:#fff}
+.btn-pri:hover{background:#534AB7;border-color:#534AB7}
+.btn-pri:disabled{opacity:.35;cursor:not-allowed}
+.btn-ghost{background:transparent;border-color:transparent;color:var(--color-text-secondary)}
+.btn-ghost:hover{background:var(--color-background-secondary)}
+.spacer{flex:1}
+.inp-row{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.inp-row label{font-size:12px;color:var(--color-text-secondary)}
+.inp-row input,.inp-row select{border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:8px 12px;font-size:13px;color:var(--color-text-primary);background:var(--color-background-primary);width:100%}
+.calc-box{background:#EEEDFE;border:0.5px solid #AFA9EC;border-radius:var(--border-radius-md);padding:14px 16px;margin-top:8px}
+.calc-box .lbl{font-size:11px;color:#534AB7;margin-bottom:2px}
+.calc-box .val{font-size:22px;font-weight:500;color:#3C3489}
+.calc-box .sub{font-size:11px;color:#534AB7;margin-top:2px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.result-wrap{text-align:center}
+.result-badge{display:inline-block;background:#EEEDFE;color:#534AB7;border-radius:var(--border-radius-md);padding:4px 14px;font-size:12px;font-weight:500;margin-bottom:10px}
+.result-num{font-size:28px;font-weight:500;color:#3C3489;margin-bottom:4px}
+.result-name{font-size:15px;font-weight:500;color:var(--color-text-primary);margin-bottom:10px}
+.result-desc{font-size:13px;color:var(--color-text-secondary);line-height:1.6;text-align:left;background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 14px;margin-bottom:12px}
+.flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:14px}
+.flow-step{background:#F1EFE8;border-radius:var(--border-radius-md);padding:5px 10px;font-size:12px;color:#5F5E5A}
+.flow-step.hi{background:#EEEDFE;color:#534AB7}
+.flow-arr{font-size:12px;color:var(--color-text-secondary)}
+.tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:14px}
+.tag{font-size:11px;padding:3px 10px;border-radius:20px}
+.tag-t{background:#E1F5EE;color:#0F6E56}
+.tag-w{background:#FAEEDA;color:#633806}
+.cta-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.cta-row a{font-size:13px;color:#534AB7;text-decoration:none;border:0.5px solid #AFA9EC;border-radius:var(--border-radius-md);padding:8px 16px}
+.cta-row a:hover{background:#EEEDFE}
+.contact-grid{display:grid;gap:8px}
+.divider{height:0.5px;background:var(--color-border-tertiary);margin:10px 0}
+</style>
+
+<h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Квиз подбора сценария ЭТРН — определите нужный сценарий электронной транспортной накладной</h2>
+
+<div class="overlay" id="root"></div>
+
+<script>
+const STEPS=[
+  {id:'role',title:'Ваша роль в перевозке',hint:'Выберите, как ваша компания участвует в большинстве перевозок',cols:2,opts:[
+    {v:'sender',ico:'📤',name:'Грузоотправитель',desc:'Отправляете товары покупателям или партнёрам'},
+    {v:'receiver',ico:'📥',name:'Грузополучатель',desc:'Получаете товары от поставщиков'},
+    {v:'both',ico:'↔️',name:'И отправитель, и получатель',desc:'В разных перевозках выступаете обеими сторонами'},
+    {v:'expeditor',ico:'🤝',name:'Экспедитор',desc:'Организуете перевозку для клиентов'},
+  ]},
+  {id:'carrier',title:'Кто осуществляет перевозку?',hint:'Кто фактически везёт груз и подписывает документы',cols:2,opts:[
+    {v:'tk',ico:'🚛',name:'Сторонняя транспортная компания',desc:'Нанятый перевозчик'},
+    {v:'exp_doc',ico:'📋',name:'Экспедитор с принятием груза',desc:'Подписывает документы как отправитель'},
+    {v:'own',ico:'🚗',name:'Свой водитель / своё ТС',desc:'Собственный транспорт компании'},
+    {v:'exp_only',ico:'🗂️',name:'Экспедитор без принятия груза',desc:'Только координирует, не принимает груз'},
+  ]},
+  {id:'cargo',title:'Тип груза',hint:'Укажите характеристики груза',cols:2,opts:[
+    {v:'ordinary',ico:'📦',name:'Обычный груз',desc:'Без особых требований'},
+    {v:'perishable',ico:'🌡️',name:'Скоропортящийся',desc:'Температурный режим, санконтроль'},
+    {v:'grouped',ico:'🔀',name:'Сборный груз',desc:'От нескольких отправителей или к нескольким получателям'},
+    {v:'marked',ico:'🔖',name:'Груз с госучётом',desc:'Честный ЗНАК, Меркурий, ЕГАИС и др.'},
+  ]},
+  {id:'route',title:'Маршрут доставки',hint:'Как груз движется от отправителя к получателю',cols:2,opts:[
+    {v:'direct',ico:'➡️',name:'Прямая доставка',desc:'Без промежуточных перегрузок'},
+    {v:'cross',ico:'🔁',name:'Кросс-докинг / перегрузка',desc:'Перевалка без хранения'},
+    {v:'internal',ico:'🏭',name:'Между своими складами',desc:'Внутренняя перевозка одной компании'},
+    {v:'selfpickup',ico:'🚗',name:'Самовывоз покупателем',desc:'Покупатель сам забирает со склада'},
+  ]},
+  {id:'changes',title:'Возможны ли изменения в процессе?',hint:'Нестандартные ситуации во время доставки',cols:2,opts:[
+    {v:'none',ico:'✅',name:'Всё по плану',desc:'Без изменений маршрута или участников'},
+    {v:'replace',ico:'🚛',name:'Замена водителя или ТС',desc:'Пересменка или замена транспорта'},
+    {v:'redirect',ico:'📍',name:'Переадресовка или частичный отказ',desc:'Смена получателя, отказ от части груза'},
+  ]},
+  {id:'1c',title:'Ваша учётная система',hint:'Для подбора способа интеграции',cols:2,opts:[
+    {v:'1c_8',ico:'💼',name:'1С:Предприятие 8.x',desc:'Актуальная версия платформы'},
+    {v:'1c_7',ico:'🗄️',name:'1С 7.7 или устаревшая',desc:'Старая версия, нужна доработка'},
+    {v:'other_erp',ico:'🖥️',name:'Другая ERP / SAP / Axapta',desc:'Не 1С'},
+    {v:'no_sys',ico:'📝',name:'Без системы учёта',desc:'Работаем вручную или в Excel'},
+  ]},
+  {id:'volume',title:'Объём документов',hint:'Примерное количество транспортных накладных в месяц',cols:2,opts:[
+    {v:'v_low',ico:'📄',name:'До 50 документов',desc:'Малый объём'},
+    {v:'v_mid',ico:'📂',name:'50–300 документов',desc:'Средний объём'},
+    {v:'v_high',ico:'🗂️',name:'300–1000 документов',desc:'Высокий объём'},
+    {v:'v_xl',ico:'🏗️',name:'Более 1000 документов',desc:'Крупный поток'},
+  ]},
+  {id:'contact',title:'Оставьте контакты для консультации',hint:'Эксперт разберёт ваш сценарий и поможет встроить ЭПД в бизнес-процессы',isContact:true},
+];
+
+const SCENARIOS={
+  1:{num:1,name:'Простая перевозка',desc:'Стандартный сценарий: грузоотправитель, перевозчик, грузополучатель. Титулы 1→2→3→4 подписываются последовательно каждой стороной.',flow:['Грузоотправитель','Перевозчик','Грузополучатель'],tags:[{t:'Титулы 1–4',c:'t'},{t:'Последовательная подпись',c:'t'}],url:'https://astral.ru/aj/elem/kak-oformit-etrn-pri-raznykh-stsenariyakh-gruzoperevozki/'},
+  2:{num:2,name:'Перевозка через экспедитора',desc:'Экспедитор координирует перевозку, но груз не принимает. Подписывает документы от имени отправителя, не становясь владельцем груза.',flow:['Грузоотправитель','Экспедитор (организует)','Перевозчик','Грузополучатель'],tags:[{t:'Титулы 1–4',c:'t'},{t:'Экспедитор',c:'w'}],url:'https://astral.ru/aj/elem/kak-oformit-etrn-pri-raznykh-stsenariyakh-gruzoperevozki/'},
+  3:{num:3,name:'Экспедитор принимает груз во владение',desc:'Экспедитор подписывает Титул 1 как отправитель, принимая юридическую ответственность за груз. Он временно становится владельцем.',flow:['Грузоотправитель','Экспедитор (владелец)','Перевозчик','Грузополучатель'],tags:[{t:'Титул 1 — экспедитор',c:'w'},{t:'Владение грузом',c:'w'}],url:'https://astral.ru/aj/elem/kak-oformit-etrn-pri-raznykh-stsenariyakh-gruzoperevozki/'},
+  4:{num:4,name:'Сборный груз / кросс-докинг',desc:'Две ЭТРН: первая — от отправителя до склада консолидации, вторая — после перегрузки до получателя. Либо единый документ со специальными отметками.',flow:['Отправитель','Склад (перегрузка)','Получатель'],tags:[{t:'2 ЭТРН',c:'w'},{t:'Перегрузка',c:'w'}],url:'https://astral.ru/aj/elem/kak-oformit-etrn-pri-raznykh-stsenariyakh-gruzoperevozki/'},
+  5:{num:5,name:'Замена водителя / ТС',desc:'После Титула 2 (принятие груза перевозчиком) оформляется Титул 8 — замена транспортного средства или водителя. Остальные титулы — в стандартном порядке.',flow:['Водитель 1','Оформление Т8','Водитель 2','Получатель'],tags:[{t:'Титул 8',c:'w'},{t:'Замена в процессе',c:'w'}],url:'https://astral.ru/aj/elem/kak-oformit-etrn-pri-raznykh-stsenariyakh-gruzoperevozki/'},
+  6:{num:6,name:'Скоропортящийся груз',desc:'В Титуле 1 обязательно указывается температурный режим, срок годности, особые условия перевозки. При госучёте — интеграция с Меркурием.',flow:['Грузоотправитель','Перевозчик (темп. режим)','Грузополучатель'],tags:[{t:'Температурный режим',c:'w'},{t:'Санконтроль',c:'w'}],url:'https://astral.ru/aj/elem/kak-oformit-etrn-pri-raznykh-stsenariyakh-gruzoperevozki/'},
+  7:{num:7,name:'Переадресовка или частичный отказ',desc:'При отказе от части груза оформляется Титул 3 с отметкой. Для переадресации — Титул 7 с новым получателем. Груз возвращается или перенаправляется.',flow:['Отправитель','Перевозчик','Отказ/переадресовка (Т7)','Новый получатель'],tags:[{t:'Титул 7',c:'w'},{t:'Изменение получателя',c:'w'}],url:'https://astral.ru/aj/elem/kak-oformit-etrn-pri-raznykh-stsenariyakh-gruzoperevozki/'},
+  8:{num:8,name:'Отказ и возврат с экспедитором',desc:'Получатель отказывается от груза. Экспедитор оформляет отказ в Титуле 3, затем Титул 7 для возврата. Возможна переадресация другому получателю.',flow:['Отправитель','Экспедитор','Отказ (Т3+Т7)','Возврат'],tags:[{t:'Возврат груза',c:'w'},{t:'Экспедитор',c:'w'}],url:'https://astral.ru/aj/elem/kak-oformit-etrn-pri-raznykh-stsenariyakh-gruzoperevozki/'},
+  9:{num:9,name:'Самовывоз покупателем',desc:'Покупатель приезжает на склад продавца и забирает груз. Он одновременно является и грузоотправителем, и грузополучателем в документах.',flow:['Продавец (склад)','Покупатель = отправитель + получатель'],tags:[{t:'Совмещение ролей',c:'w'},{t:'Самовывоз',c:'t'}],url:'https://astral.ru/aj/elem/kak-oformit-etrn-pri-raznykh-stsenariyakh-gruzoperevozki/'},
+  10:{num:10,name:'Груз с госучётом (Честный ЗНАК)',desc:'Дополнительные сведения в Титуле 1 для интеграции с ГИС. Обязательна передача кодов маркировки при смене владельца.',flow:['Отправитель','Перевозчик','Получатель + ГИС'],tags:[{t:'Честный ЗНАК',c:'w'},{t:'Интеграция с ГИС',c:'w'}],url:'https://astral.ru/aj/elem/kak-oformit-etrn-pri-raznykh-stsenariyakh-gruzoperevozki/'},
+  11:{num:11,name:'Внутренняя перевозка',desc:'Одна компания перемещает груз между своими складами, используя сторонний транспорт. Грузоотправитель и грузополучатель — одно юрлицо.',flow:['Склад А (свой)','Перевозчик','Склад Б (свой)'],tags:[{t:'Одна компания',c:'t'},{t:'Сторонний перевозчик',c:'w'}],url:'https://astral.ru/aj/elem/kak-oformit-etrn-pri-raznykh-stsenariyakh-gruzoperevozki/'},
+};
+
+const PRICE={v_low:2500,v_mid:9000,v_high:26000,v_xl:72000};
+const PRICE_LABEL={v_low:'~2 500 ₽/мес',v_mid:'~9 000 ₽/мес',v_high:'~26 000 ₽/мес',v_xl:'от 72 000 ₽/мес'};
+
+function determineScenario(a){
+  if(a.route==='selfpickup') return SCENARIOS[9];
+  if(a.route==='internal') return SCENARIOS[11];
+  if(a.cargo==='marked') return SCENARIOS[10];
+  if(a.cargo==='perishable') return SCENARIOS[6];
+  if(a.changes==='replace') return SCENARIOS[5];
+  if(a.route==='cross'||a.cargo==='grouped') return SCENARIOS[4];
+  if(a.changes==='redirect'){
+    return (a.carrier==='exp_doc'||a.role==='expeditor') ? SCENARIOS[8] : SCENARIOS[7];
+  }
+  if(a.carrier==='exp_doc') return SCENARIOS[3];
+  if(a.carrier==='exp_only'||a.role==='expeditor') return SCENARIOS[2];
+  return SCENARIOS[1];
+}
+
+let step=0;
+let answers={};
+let contactData={name:'',phone:'',email:''};
+
+function render(){
+  const root=document.getElementById('root');
+  const s=STEPS[step];
+  const total=STEPS.length;
+  const pct=Math.round((step/(total-1))*100);
+
+  if(s.id==='result'){renderResult(root);return;}
+
+  const selV=answers[s.id]||null;
+
+  let bodyHTML='';
+
+  if(s.isContact){
+    bodyHTML=`
+      <div class="q-title">${s.title}</div>
+      <div class="q-hint">${s.hint}</div>
+      <div class="contact-grid">
+        <div class="inp-row"><label>Имя</label><input id="c_name" type="text" placeholder="Ваше имя" value="${contactData.name}"></div>
+        <div class="inp-row"><label>Телефон</label><input id="c_phone" type="tel" placeholder="+7 (___) ___-__-__" value="${contactData.phone}"></div>
+        <div class="inp-row"><label>Email</label><input id="c_email" type="email" placeholder="email@company.ru" value="${contactData.email}"></div>
+      </div>
+      <div class="divider"></div>
+      ${answers.volume?`<div class="calc-box"><div class="lbl">Примерная стоимость по ресурсному тарифу</div><div class="val">${PRICE_LABEL[answers.volume]}</div><div class="sub">Точный расчёт — после консультации с учётом вашей конфигурации</div></div>`:''}
+    `;
+  } else {
+    const gridCls=s.cols===3?'opts cols-3':'opts cols-2';
+    bodyHTML=`
+      <div class="q-title">${s.title}</div>
+      <div class="q-hint">${s.hint}</div>
+      <div class="${gridCls}">
+        ${s.opts.map(o=>`
+          <div class="opt${selV===o.v?' sel':''}" data-v="${o.v}">
+            <div class="opt-ico">${o.ico}</div>
+            <div class="opt-body">
+              <div class="opt-name">${o.name}</div>
+              <div class="opt-desc">${o.desc}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  const canNext=s.isContact||(selV!==null);
+
+  root.innerHTML=`<div class="popup">
+    <div class="popup-header">
+      <div class="alert-bar">
+        <span class="icon">⚡</span>
+        <p>С 1 сентября 2026 года ЭПД обязателен для всех юрлиц и ИП, участвующих в коммерческих перевозках.</p>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <span class="step-label">Шаг ${step+1} из ${total}</span>
+      </div>
+    </div>
+    <div class="popup-body" id="pbody">${bodyHTML}</div>
+    <div class="popup-footer">
+      ${step>0?'<button id="bback" class="btn-ghost">← Назад</button>':''}
+      <div class="spacer"></div>
+      <button id="bnext" class="btn-pri"${canNext?'':' disabled'}>${step<total-1?'Далее →':'Получить результат'}</button>
+    </div>
+  </div>`;
+
+  root.querySelectorAll('.opt').forEach(el=>{
+    el.addEventListener('click',()=>{
+      answers[s.id]=el.dataset.v;
+      render();
+    });
+  });
+
+  const bn=root.querySelector('#bnext');
+  if(bn) bn.addEventListener('click',()=>{
+    if(s.isContact){
+      contactData.name=root.querySelector('#c_name').value;
+      contactData.phone=root.querySelector('#c_phone').value;
+      contactData.email=root.querySelector('#c_email').value;
+    }
+    if(step<STEPS.length-1){step++;render();}
+    else renderResult(root);
+  });
+
+  const bb=root.querySelector('#bback');
+  if(bb) bb.addEventListener('click',()=>{if(step>0){step--;render();}});
+}
+
+function renderResult(root){
+  const sc=determineScenario(answers);
+  const vol=answers.volume||null;
+
+  const flowHTML=sc.flow.map((f,i)=>{
+    const hi=i===0||i===sc.flow.length-1;
+    return `<span class="flow-step${hi?' hi':''}">${f}</span>${i<sc.flow.length-1?'<span class="flow-arr">→</span>':''}`;
+  }).join('');
+
+  const tagsHTML=sc.tags.map(t=>`<span class="tag tag-${t.c}">${t.t}</span>`).join('');
+
+  root.innerHTML=`<div class="popup">
+    <div class="popup-header">
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-fill" style="width:100%"></div></div>
+        <span class="step-label">Готово</span>
+      </div>
+    </div>
+    <div class="popup-body">
+      <div class="result-wrap">
+        <div class="result-badge">Рекомендуемый сценарий</div>
+        <div class="result-num">Сценарий № ${sc.num}</div>
+        <div class="result-name">${sc.name}</div>
+        <div class="flow">${flowHTML}</div>
+        <div class="tags">${tagsHTML}</div>
+        <div class="result-desc">${sc.desc}</div>
+        ${vol?`<div class="calc-box" style="margin-bottom:14px"><div class="lbl">Оценочная стоимость по ресурсному тарифу</div><div class="val">${PRICE_LABEL[vol]}</div><div class="sub">Итоговая цена зависит от конфигурации и набора модулей</div></div>`:''}
+        <div class="cta-row">
+          <a href="${sc.url}" target="_blank">Открыть статью с примерами</a>
+          <a href="#" id="a_tg">Написать в Telegram</a>
+        </div>
+      </div>
+    </div>
+    <div class="popup-footer">
+      <button class="btn-ghost" id="brestart">Пройти заново</button>
+      <div class="spacer"></div>
+    </div>
+  </div>`;
+
+  root.querySelector('#brestart').addEventListener('click',()=>{step=0;answers={};contactData={name:'',phone:'',email:''};render();});
+  root.querySelector('#a_tg').addEventListener('click',e=>{e.preventDefault();window.open('https://t.me/astral_epd','_blank');});
+}
+
+render();
+</script>
