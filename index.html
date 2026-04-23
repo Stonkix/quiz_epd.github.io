@@ -547,7 +547,7 @@ const STEPS=[
     {v:'none',ico:'📝',name:'Без учётной системы',desc:'Excel или вручную — веб-интерфейс оператора'},
   ]},
   // Q6 — объём
-  {id:'vol',title:'Объём транспортных накладных в месяц',hint:'Для подбора тарифного пакета',cols:2,opts:[
+  {id:'vol',title:'Объём транспортных накладных в год',hint:'Для подбора тарифного пакета',cols:2,opts:[
     {v:'v600', ico:'📄',name:'До 600 документов',      desc:'Стартовый объём'},
     {v:'v1000',ico:'📂',name:'600–1 000 документов',   desc:'Средний поток'},
     {v:'v5000',ico:'🗂️',name:'1 000–5 000 документов',desc:'Высокий поток'},
@@ -698,7 +698,7 @@ function render(){ /* render() полностью как в предыдущей
       <div class="q-title">${s.title}</div>
       <div class="q-hint">${s.hint}</div>
       <div style="background:#E1F5EE;border:1px solid #5DCAA5;border-radius:10px;padding:10px 14px;margin:10px 0 14px;font-size:12px;color:#085041;line-height:1.5">
-        ✅ <strong>Результат вы увидите прямо здесь, на следующем шаге</strong> — никаких звонков с «уточнением деталей», готовый сценарий появится сразу после заполнения формы.
+        ✅ <strong>Результат вы увидите прямо здесь, на следующем шаге</strong>
       </div>
       <div class="contact-grid">
         <div class="inp-row"><label>Имя <span style="color:#e74c3c">*</span></label><input id="c_name" type="text" placeholder="Ваше имя" value="${contactData.name}"></div>
