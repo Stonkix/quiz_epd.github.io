@@ -111,6 +111,22 @@ button:hover{background:#f8f8f8}
 .calc-box .sub{font-size:11px;color:#534AB7;margin-top:2px}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .result-wrap{text-align:center}
+.scenario-image-wrap{
+  position:relative;
+  margin:20px 0 24px;
+}
+.scenario-image{
+  width:100%;
+  max-width:620px;
+  border-radius:16px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.1);
+  cursor:zoom-in;
+}
+.scenario-image-hint{
+  margin-top:8px;
+  font-size:12px;
+  color:#666;
+}
 .result-badge{
   display:inline-block;
   background:#EEEDFE;
@@ -196,6 +212,49 @@ button:hover{background:#f8f8f8}
 .role-lbl{font-size:11px;color:#0F6E56;margin-bottom:6px;letter-spacing:0.5px}
 .role-t{font-size:18px;font-weight:600;color:#085041;margin-bottom:6px}
 .role-d{font-size:12px;color:#0F6E56;line-height:1.4}
+
+.img-modal{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,0.82);
+  z-index:9999;
+  padding:20px;
+  overflow:auto;
+}
+.img-modal.open{display:flex}
+.img-modal img{
+  width:96vw;
+  max-width:none;
+  max-height:96vh;
+  height:auto;
+  object-fit:contain;
+  border-radius:12px;
+  box-shadow:0 16px 48px rgba(0,0,0,0.45);
+  cursor:zoom-in;
+}
+.img-modal img.zoom-actual{
+  width:auto;
+  max-width:none;
+  max-height:none;
+  cursor:zoom-out;
+}
+.img-modal-close{
+  position:absolute;
+  top:16px;
+  right:16px;
+  width:44px;
+  height:44px;
+  border:none;
+  border-radius:999px;
+  background:rgba(255,255,255,0.22);
+  color:#fff;
+  font-size:28px;
+  line-height:1;
+  cursor:pointer;
+}
 
 /* ====================== PDF TEMPLATE (вся статика здесь) ====================== */
 #pdf-template{
@@ -459,6 +518,10 @@ function setMode(m){
 }
 </script>
 <div class="overlay" id="root"></div>
+<div class="img-modal" id="img-modal" aria-hidden="true">
+  <button class="img-modal-close" id="img-modal-close" aria-label="Закрыть">×</button>
+  <img id="img-modal-photo" src="" alt="Схема сценария в полном размере">
+</div>
 
 <script>
 // ==================== ОСНОВНОЙ КВИЗ (без изменений) ====================
@@ -478,8 +541,8 @@ function setMode(m){
 
   Q3: changes — нештатные ситуации?
     replace    → Сц5
-    redirect   → Сц7
-    partial    → Сц8
+    partial_redirect      → Сц7
+    full_refusal_redirect → Сц8
     none       → Q4
 
   Q4: carrier_type — кто везёт?
@@ -510,16 +573,16 @@ const STEPS=[
     {v:'selfpickup',ico:'🧑‍💼',name:'Самовывоз покупателем', desc:'Покупатель сам приезжает на ваш склад'},
     {v:'internal',  ico:'🏭',name:'Между своими складами',   desc:'Одна компания, нанятый перевозчик'},
     {v:'marked',    ico:'🔖',name:'Груз с госучётом',         desc:'Честный ЗНАК, Меркурий, ЕГАИС — нужен атрибут УчГосСист=1'},
-    {v:'perishable',ico:'🌡️',name:'Скоропортящийся груз',   desc:'Температурный режим, фито/санитарный контроль'},
+    {v:'perishable',ico:'🌡️',name:'Скоропортящийся груз',   desc:'Дополнительные сведения о грузе в Т1'},
   ]},
   // Q3 — нештатные ситуации (только если special=none)
   {id:'changes',title:'Возможны ли нештатные ситуации в рейсе?',hint:'Влияют на состав опциональных титулов',cols:2,
-   skipIf: a => a.special!=='none' || a.role==='expeditor',
+   skipIf: a => a.special!=='none' || a.role==='expeditor' || a.role==='receiver',
    opts:[
     {v:'none',    ico:'✅',name:'Всё по плану',                  desc:'Без изменений в ходе доставки'},
     {v:'replace', ico:'🔄',name:'Замена водителя или ТС',        desc:'В ходе рейса — Титул 8'},
-    {v:'redirect',ico:'📍',name:'Переадресовка нового получателя',desc:'Смена грузополучателя — Титул 7'},
-    {v:'partial', ico:'📦',name:'Частичный отказ + переадресовка',desc:'Часть груза не принята, оформляется Т7'},
+    {v:'partial_redirect',ico:'📦',name:'Частичная приёмка и переадресация',desc:'Сценарий 7 — Титул 7 для непринятой части'},
+    {v:'full_refusal_redirect',ico:'📍',name:'Отказ в приёмке и переадресация',desc:'Сценарий 8 — с участием экспедитора (ГОЭксп=1)'},
   ]},
   // Q4 — кто везёт (для грузоотправителей/перевозчиков при обычной перевозке без нештатных)
   {id:'carrier_type',title:'Кто фактически осуществляет перевозку?',hint:'Определяет, кто подписывает Титул 1 и роль экспедитора',cols:2,
@@ -540,11 +603,15 @@ const STEPS=[
     {v:'cross',     ico:'🔁',name:'Кросс-докинг / перегрузка без хранения',desc:'Две ЭТРН: магистраль + последняя миля — Сц 4'},
   ]},
   // Q5 — учётная система (всегда)
-  {id:'sys',title:'Ваша учётная система',hint:'Для подбора способа интеграции с оператором ИС ЭПД',cols:2,opts:[
-    {v:'1c8',ico:'💼',name:'1С:Предприятие 8.x',desc:'Актуальная версия — готовый модуль 1С-ЭПД'},
-    {v:'1c7',ico:'🗄️',name:'1С 7.7 или устаревшая',desc:'Требуется доработка или переход'},
-    {v:'erp',ico:'🖥️',name:'Другая ERP / SAP / Axapta',desc:'Интеграция через API'},
-    {v:'none',ico:'📝',name:'Без учётной системы',desc:'Excel или вручную — веб-интерфейс оператора'},
+  {id:'sys_type',title:'Ваша учётная система',hint:'Определим тип интеграции с оператором ИС ЭПД',cols:2,opts:[
+    {v:'1c',ico:'💼',name:'1С',desc:'Далее уточним версию 1С'},
+    {v:'non_1c',ico:'🖥️',name:'Не 1С',desc:'Всегда проектное решение'},
+  ]},
+  {id:'sys_1c_ver',title:'Какая версия 1С используется?',hint:'Тип решения зависит от версии 1С',cols:2,
+   skipIf: a => a.sys_type!=='1c',
+   opts:[
+    {v:'1c_83_std',ico:'✅',name:'1С 8.3',desc:'Типовое решение'},
+    {v:'1c_legacy_proj',ico:'🛠️',name:'От 8.0 до 8.3',desc:'Проектное решение'},
   ]},
   // Q6 — объём
   {id:'vol',title:'Объём транспортных накладных в год',hint:'Для подбора тарифного пакета',cols:2,opts:[
@@ -555,7 +622,6 @@ const STEPS=[
     {v:'v50k', ico:'🏗️',name:'10 000–50 000 документов',desc:'Крупный клиент'},
     {v:'v100k',ico:'🏢',name:'Свыше 50 000 документов',desc:'Enterprise'},
   ]},
-  {id:'contact',title:'Получите персональное КП',hint:'Эксперт разберёт ваш сценарий и подготовит расчёт',isContact:true},
 ];
 
 const TARIFFS={ /* без изменений */ 
@@ -599,16 +665,16 @@ const SCENARIOS={
      roles:{sender:'Грузоотправитель — Т1',receiver:'Грузополучатель — Т3',both:'Грузовладелец',carrier:'Перевозчик — Т2, Т8, Т4',expeditor:'Организатор'},
      tags:[{t:'Титул 8 (замена)',c:'ta'},{t:'Смена ТС/водителя',c:'tw'}]},
   6:{num:6,name:'Перевозка скоропортящегося груза',
-     desc:'Как сценарий 1, но в Т1 грузоотправитель дополнительно указывает температурный режим и данные для фитосанитарного/санитарного/карантинного контроля в разделе о грузе.',
-     flow:['Грузоотправитель (Т1 + темп. режим)','Перевозчик (Т2+Т4)','Грузополучатель (Т3)'],
-     roles:{sender:'Грузоотправитель — Т1 с доп. полями',receiver:'Грузополучатель — Т3',both:'Грузовладелец',carrier:'Перевозчик (рефрижератор) — Т2 и Т4',expeditor:'Экспедитор'},
-     tags:[{t:'Температурный режим',c:'ta'},{t:'Доп. поля в Т1',c:'tp'}]},
-  7:{num:7,name:'Переадресовка на нового грузополучателя',
+     desc:'Как сценарий 1, но в Т1 грузоотправитель дополнительно указывает сведения о скоропортящемся грузе в блоке о грузе и сопроводительных документах.',
+     flow:['Грузоотправитель (Т1 с доп. сведениями о грузе)','Перевозчик (Т2+Т4)','Грузополучатель (Т3)'],
+     roles:{sender:'Грузоотправитель — Т1 с доп. сведениями о грузе',receiver:'Грузополучатель — Т3',both:'Грузовладелец',carrier:'Перевозчик (рефрижератор) — Т2 и Т4',expeditor:'Экспедитор'},
+     tags:[{t:'Скоропортящийся груз',c:'ta'},{t:'Доп. поля в Т1',c:'tp'}]},
+  7:{num:7,name:'Частичная приёмка и переадресация новому грузополучателю',
      desc:'Грузополучатель принял груз частично (Т3 с указанием частичной приёмки), перевозчик оформил Т4 на принятую часть. Для непринятой части перевозчик формирует Титул 7 с новым адресом/получателем. Новый получатель подписывает Т3, перевозчик — Т4.',
      flow:['Грузоотправитель (Т1)','Перевозчик (Т2)','Частичная приёмка (Т3+Т4)','Перевозчик (Т7 — переадресовка)','Новый получатель (Т3)','Перевозчик (Т4)'],
      roles:{sender:'Грузоотправитель — Т1',receiver:'Грузополучатель — Т3 (частично)',both:'Грузовладелец',carrier:'Перевозчик — Т2, Т4, Т7',expeditor:'Организатор'},
      tags:[{t:'Титул 7 (переадресовка)',c:'ta'},{t:'Частичный отказ',c:'tw'}]},
-  8:{num:8,name:'Полный отказ + переадресовка (экспедитор)',
+  8:{num:8,name:'Отказ грузополучателя в приёме и переадресация',
      desc:'Грузополучатель полностью отказал в приёмке (Т3 с отказом). Перевозчик оформил Т4. Стороны договариваются о возврате/переадресовке — перевозчик формирует Титул 7. В этом сценарии экспедитор выступает грузоотправителем (ГОЭксп=1 в Т1) и принимает груз обратно.',
      flow:['Экспедитор (Т1, ГОЭксп=1)','Перевозчик (Т2)','Отказ получателя (Т3+Т4)','Перевозчик (Т7)','Экспедитор = новый получатель (Т3)','Перевозчик (Т4)'],
      roles:{sender:'Заказчик (иностранное лицо / клиент — раздел 1а)',receiver:'Экспедитор = грузополучатель при возврате',both:'Грузовладелец',carrier:'Перевозчик — Т2, Т4, Т7',expeditor:'Экспедитор — Т1 как отправитель и получатель при возврате'},
@@ -619,7 +685,7 @@ const SCENARIOS={
      roles:{sender:'Продавец — формирует Т1 как ЛОП',receiver:'Покупатель — грузоотправитель и грузополучатель',both:'Покупатель совмещает обе роли',carrier:'Перевозчик покупателя — Т2 и Т4',expeditor:'Организатор самовывоза'},
      tags:[{t:'Покупатель = Отправитель + Получатель',c:'ta'},{t:'ЛОП — продавец',c:'tp'}]},
   10:{num:10,name:'Груз, подлежащий учёту в ГИС (маркировка и др.)',
-      desc:'Документооборот как в сценарии 1. В Т1 грузоотправитель дополнительно указывает: атрибут «УчГосСист=1» и заполняет поля НаимГосСист, ИдНомУчетЕд, УчетЕд (Честный ЗНАК, Меркурий, ЕГАИС и т.д.).',
+      desc:'Перевозка проходит без посредника-экспедитора и по документообороту совпадает со сценарием 1. В Т1 грузоотправитель дополнительно указывает: атрибут «УчГосСист=1» и заполняет поля НаимГосСист, ИдНомУчетЕд, УчетЕд (Честный ЗНАК, Меркурий, ЕГАИС и т.д.).',
       flow:['Грузоотправитель (Т1 + УчГосСист=1)','Перевозчик (Т2+Т4)','Получатель (Т3) + уведомление в ГИС'],
       roles:{sender:'Грузоотправитель — Т1 с атрибутом УчГосСист',receiver:'Грузополучатель — Т3',both:'Грузовладелец',carrier:'Перевозчик — Т2 и Т4',expeditor:'Экспедитор'},
       tags:[{t:'УчГосСист=1 в Т1',c:'ta'},{t:'Честный ЗНАК / Меркурий',c:'tp'}]},
@@ -655,8 +721,8 @@ function determineScenario(a){
 
   // Нештатные ситуации
   if(changes==='replace')  return SCENARIOS[5];
-  if(changes==='redirect') return SCENARIOS[7];
-  if(changes==='partial')  return SCENARIOS[8];
+  if(changes==='partial_redirect')      return SCENARIOS[7];
+  if(changes==='full_refusal_redirect') return SCENARIOS[8];
 
   // Кто везёт
   if(ct==='exp_novlad') return SCENARIOS['2a'];
@@ -670,7 +736,40 @@ function determineScenario(a){
 
 function fmt(n){return Number(n).toLocaleString('ru-RU')}
 
-let step=0, answers={}, contactData={name:'',phone:'',email:''};
+function getIntegrationInfo(a){
+  if(a.sys_type==='1c' && a.sys_1c_ver==='1c_83_std'){
+    return {isStandard:true, note:'(типовое решение)'};
+  }
+  if(a.sys_type==='1c' && a.sys_1c_ver==='1c_legacy_proj'){
+    return {isStandard:false, note:'(проектное решение — доработка 1С)'};
+  }
+  if(a.sys_type==='non_1c'){
+    return {isStandard:false, note:'(проектное решение — интеграция под вашу систему)'};
+  }
+  return {isStandard:false, note:'(проектное решение)'};
+}
+
+let step=0, answers={};
+
+function openScenarioImageModal(src, alt){
+  const modal=document.getElementById('img-modal');
+  const photo=document.getElementById('img-modal-photo');
+  photo.src=src;
+  photo.alt=alt||'Схема сценария';
+  photo.classList.remove('zoom-actual');
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden','false');
+  document.body.style.overflow='hidden';
+}
+
+function closeScenarioImageModal(){
+  const modal=document.getElementById('img-modal');
+  const photo=document.getElementById('img-modal-photo');
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden','true');
+  photo.src='';
+  document.body.style.overflow='';
+}
 
 function getVisibleSteps(){
   // Build visible steps list based on current answers
@@ -689,45 +788,24 @@ function render(){ /* render() полностью как в предыдущей
 
   let bodyHTML='';
 
-  if(s.isContact){
-    const volK=answers.vol||null;
-    const t=volK?TARIFFS[volK]:null;
-    const sysK=answers.sys||null;
-    const isStd=sysK==='1c8';
-    bodyHTML=`
-      <div class="q-title">${s.title}</div>
-      <div class="q-hint">${s.hint}</div>
-      <div style="background:#E1F5EE;border:1px solid #5DCAA5;border-radius:10px;padding:10px 14px;margin:10px 0 14px;font-size:12px;color:#085041;line-height:1.5">
-        ✅ <strong>Результат вы увидите прямо здесь, на следующем шаге</strong>
-      </div>
-      <div class="contact-grid">
-        <div class="inp-row"><label>Имя <span style="color:#e74c3c">*</span></label><input id="c_name" type="text" placeholder="Ваше имя" value="${contactData.name}"></div>
-        <div class="inp-row"><label>Телефон <span style="color:#e74c3c">*</span></label><input id="c_phone" type="tel" placeholder="+7 (___) ___-__-__" value="${contactData.phone}"></div>
-        <div class="inp-row"><label>Email</label><input id="c_email" type="email" placeholder="email@company.ru" value="${contactData.email}"></div>
-      </div>
-      <div class="divider"></div>
-      ${t?`<div class="calc-box"><div class="lbl">Примерная стоимость пакета</div><div class="val">${fmt(t.year)} ₽/год</div><div class="sub">${t.name} · ${fmt(t.month)} ₽/мес ${isStd?'(типовое решение)':'(проектное решение — доработка 1С)'}</div></div>`:''}
-    `;
-  } else {
-    const gridCls=s.cols===3?'opts cols-3':'opts cols-2';
-    bodyHTML=`
-      <div class="q-title">${s.title}</div>
-      <div class="q-hint">${s.hint}</div>
-      <div class="${gridCls}">
-        ${s.opts.map(o=>`
-          <div class="opt${selV===o.v?' sel':''}" data-v="${o.v}">
-            <div class="opt-ico">${o.ico}</div>
-            <div class="opt-body">
-              <div class="opt-name">${o.name}</div>
-              <div class="opt-desc">${o.desc}</div>
-            </div>
+  const gridCls=s.cols===3?'opts cols-3':'opts cols-2';
+  bodyHTML=`
+    <div class="q-title">${s.title}</div>
+    <div class="q-hint">${s.hint}</div>
+    <div class="${gridCls}">
+      ${s.opts.map(o=>`
+        <div class="opt${selV===o.v?' sel':''}" data-v="${o.v}">
+          <div class="opt-ico">${o.ico}</div>
+          <div class="opt-body">
+            <div class="opt-name">${o.name}</div>
+            <div class="opt-desc">${o.desc}</div>
           </div>
-        `).join('')}
-      </div>
-    `;
-  }
+        </div>
+      `).join('')}
+    </div>
+  `;
 
-  const canNext = s.isContact ? false : (selV!==null);
+  const canNext = (selV!==null);
 
   root.innerHTML=`<div class="popup">
     <div class="popup-header">
@@ -752,25 +830,7 @@ function render(){ /* render() полностью как в предыдущей
 
   const bn=root.querySelector('#bnext');
   const bb=root.querySelector('#bback');
-
-  if(s.isContact){
-    const nameIn = root.querySelector('#c_name');
-    const phoneIn = root.querySelector('#c_phone');
-    const emailIn = root.querySelector('#c_email');
-    const checkContact = ()=>{ bn.disabled = !(nameIn.value.trim() !== '' && phoneIn.value.trim() !== ''); };
-    nameIn.addEventListener('input', checkContact);
-    phoneIn.addEventListener('input', checkContact);
-    checkContact();
-    bn.addEventListener('click',()=>{
-      contactData.name = nameIn.value.trim();
-      contactData.phone = phoneIn.value.trim();
-      contactData.email = emailIn.value.trim();
-      if(step<visibleSteps.length-1){step++;render();}
-      else renderResult(root);
-    });
-  } else {
-    if(bn) bn.addEventListener('click',()=>{ if(step<visibleSteps.length-1){step++;render();} else renderResult(root); });
-  }
+  if(bn) bn.addEventListener('click',()=>{ if(step<visibleSteps.length-1){step++;render();} else renderResult(root); });
   if(bb) bb.addEventListener('click',()=>{if(step>0){step--;render();}});
 }
 
@@ -778,8 +838,8 @@ function renderResult(root){
   const sc=determineScenario(answers);
   const vol=answers.vol||null;
   const t=vol?TARIFFS[vol]:null;
-  const sys=answers.sys||null;
-  const isStandard=sys==='1c8';
+  const integration=getIntegrationInfo(answers);
+  const isStandard=integration.isStandard;
   const roleKey=answers.role||'sender';
   const roleLabel=sc.roles[roleKey]||'Участник перевозки';
 
@@ -805,7 +865,7 @@ function renderResult(root){
           <div class="sub">на 12 месяцев</div>
         </div>
       </div>
-      ${!isStandard?`<div class="alert-bar" style="margin-top:8px"><span class="icon">📋</span><p><strong>Проектное решение:</strong> Для вашей системы учёта требуется доработка 1С. Точная стоимость — после консультации эксперта.</p></div>`:''}
+      ${!isStandard?`<div class="alert-bar" style="margin-top:8px"><span class="icon">📋</span><p><strong>Проектное решение:</strong> Для вашей учётной системы требуется индивидуальная интеграция. Точная стоимость — после консультации эксперта.</p></div>`:''}
     `;
   }
 
@@ -828,7 +888,10 @@ function renderResult(root){
           <div class="role-d">Именно в этой роли вы подписываете соответствующие титулы ЭТРН</div>
         </div>
 
-        <img src="Stsenariy_${sc.num}.webp" alt="Схема сценария №${sc.num}" style="width:100%;max-width:620px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.1);margin:20px 0 24px;">
+        <div class="scenario-image-wrap">
+          <img id="scenario-img" class="scenario-image" src="Stsenariy_${sc.num}.webp" alt="Схема сценария №${sc.num}">
+          <div class="scenario-image-hint">Нажмите на схему, чтобы открыть в полном размере</div>
+        </div>
 
         <div class="flow">${flowHTML}</div>
         <div class="tags">${tagsHTML}</div>
@@ -851,7 +914,11 @@ function renderResult(root){
     </div>
   </div>`;
 
-  root.querySelector('#brestart').addEventListener('click',()=>{step=0;answers={};contactData={name:'',phone:'',email:''};render();});
+  root.querySelector('#brestart').addEventListener('click',()=>{step=0;answers={};render();});
+  const scenarioImg = root.querySelector('#scenario-img');
+  if(scenarioImg){
+    scenarioImg.addEventListener('click',()=>openScenarioImageModal(scenarioImg.src, scenarioImg.alt));
+  }
 
   // ==================== ГЕНЕРАЦИЯ PDF ====================
   root.querySelector('#btn-download').addEventListener('click', async () => {
@@ -927,6 +994,29 @@ function renderResult(root){
     btn.textContent = '⬇ Скачать коммерческое предложение';
   });
 }
+
+const modal = document.getElementById('img-modal');
+const modalClose = document.getElementById('img-modal-close');
+const modalPhoto = document.getElementById('img-modal-photo');
+if(modalClose){
+  modalClose.addEventListener('click', closeScenarioImageModal);
+}
+if(modalPhoto){
+  modalPhoto.addEventListener('click', (e) => {
+    e.stopPropagation();
+    modalPhoto.classList.toggle('zoom-actual');
+  });
+}
+if(modal){
+  modal.addEventListener('click', (e) => {
+    if(e.target===modal) closeScenarioImageModal();
+  });
+}
+document.addEventListener('keydown', (e) => {
+  if(e.key==='Escape' && modal && modal.classList.contains('open')){
+    closeScenarioImageModal();
+  }
+});
 
 render();
 </script>
